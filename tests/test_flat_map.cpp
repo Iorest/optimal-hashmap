@@ -18,7 +18,7 @@
 //   cmake --build build && ctest --test-dir build -V
 //
 // Or manually (with ASan):
-//   clang++ -std=c++17 -O1 -g -fsanitize=address,undefined -pthread \
+//   clang++ -std=c++17 -O1 -g -fsanitize=address,undefined -pthread
 //       tests/test_flat_map.cpp -Iinclude -o /tmp/t && /tmp/t
 // =============================================================================
 
