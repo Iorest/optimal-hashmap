@@ -81,7 +81,8 @@
 // ── TSan: KV buffer written before bucket release-store, read after acquire-load.
 // The CAS establishes C++17 happens-before; TSan needs an explicit hint because
 // it tracks same-address atomics only, not cross-object release/acquire pairs.
-#if defined(__has_feature) && __has_feature(thread_sanitizer)
+// __has_feature is Clang-only; GCC uses __SANITIZE_THREAD__ instead.
+#if (defined(__has_feature) && __has_feature(thread_sanitizer)) || defined(__SANITIZE_THREAD__)
 extern "C" void AnnotateBenignRaceSized(const char*, int,
                                         const volatile void*, size_t, const char*);
 #  define OOH_TSAN_BENIGN_RACE(p, sz) \
