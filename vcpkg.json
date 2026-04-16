@@ -1,0 +1,9 @@
+{
+  "$schema": "https://raw.githubusercontent.com/microsoft/vcpkg-tool/main/docs/vcpkg.schema.json",
+  "name": "ooh",
+  "version": "1.0.0",
+  "description": "High-performance lock-free open-addressing hash map (header-only, C++17)",
+  "homepage": "https://github.com/your-org/ooh",
+  "license": "MIT",
+  "dependencies": []
+}

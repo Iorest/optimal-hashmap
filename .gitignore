@@ -1,0 +1,46 @@
+# CMake build directories (out-of-source)
+build/
+build-*/
+build_*/
+out/
+
+# Compiled test/bench binaries
+a.out
+
+# FetchContent / CPM downloaded dependencies
+_deps/
+
+# Compiled binaries & libraries
+*.o
+*.a
+*.so
+*.so.*
+*.dylib
+*.exe
+
+# macOS debug symbols
+*.dSYM/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# clangd / LSP cache
+.cache/
+compile_commands.json
+
+# Testing artifacts
+Testing/
+CTestTestfile.cmake
+LastTest.log
+
+# CMake generated (in-source build leftovers)
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+install_manifest.txt
+Makefile

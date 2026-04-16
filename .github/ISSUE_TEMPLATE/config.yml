@@ -1,0 +1,9 @@
+---
+blank_issues_enabled: false
+contact_links:
+  - name: Question / Discussion
+    url: https://github.com/your-org/ooh/discussions
+    about: For usage questions and general discussion, please use GitHub Discussions.
+  - name: Security Vulnerability
+    url: https://github.com/your-org/ooh/security/advisories/new
+    about: Please report security vulnerabilities privately.

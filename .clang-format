@@ -1,0 +1,37 @@
+---
+BasedOnStyle: LLVM
+IndentWidth: 4
+ColumnLimit: 100
+AccessModifierOffset: -4
+
+# Alignment
+AlignAfterOpenBracket: Align
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveDeclarations: false
+AlignOperands: Align
+AlignTrailingComments:
+  Kind: Always
+  OverEmptyLines: 1
+
+# Braces
+BreakBeforeBraces: Attach
+BraceWrapping:
+  AfterFunction: false
+
+# Includes
+SortIncludes: CaseInsensitive
+IncludeBlocks: Regroup
+IncludeCategories:
+  - Regex: '^"ooh/'
+    Priority: 1
+  - Regex: '^<'
+    Priority: 2
+
+# Misc
+AllowShortFunctionsOnASingleLine: Inline
+AllowShortIfStatementsOnASingleLine: Never
+AllowShortLoopsOnASingleLine: false
+PointerAlignment: Left
+SpaceBeforeParens: ControlStatements
+Cpp11BracedListStyle: true
+Standard: c++17

@@ -1,0 +1,30 @@
+---
+Checks: >
+  clang-diagnostic-*,
+  clang-analyzer-*,
+  bugprone-*,
+  modernize-use-override,
+  modernize-use-nullptr,
+  modernize-use-default-member-init,
+  modernize-redundant-void-arg,
+  performance-*,
+  portability-*,
+  readability-identifier-naming,
+  readability-const-return-type,
+  -bugprone-easily-swappable-parameters,
+  -bugprone-exception-escape,
+  -readability-identifier-naming
+
+WarningsAsErrors: ''
+
+CheckOptions:
+  - key: readability-identifier-naming.ClassCase
+    value: CamelCase
+  - key: readability-identifier-naming.MemberPrefix
+    value: m_
+  - key: readability-identifier-naming.ParameterCase
+    value: lower_case
+  - key: performance-unnecessary-value-param.AllowedTypes
+    value: ''
+
+HeaderFilterRegex: 'include/ooh/.*'

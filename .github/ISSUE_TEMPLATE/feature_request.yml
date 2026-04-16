@@ -1,0 +1,31 @@
+name: Feature Request
+description: Suggest an addition or improvement to ooh::flat_map
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: motivation
+    attributes:
+      label: Motivation
+      description: What problem are you trying to solve? Why is the current API insufficient?
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed API / Behavior
+      description: Describe the change you'd like, ideally with a code snippet.
+      render: cpp
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Alternatives considered
+      description: Have you considered any workarounds?
+
+  - type: checkboxes
+    id: willing_to_pr
+    attributes:
+      label: Contribution
+      options:
+        - label: I am willing to submit a pull request for this feature

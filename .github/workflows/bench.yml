@@ -1,0 +1,135 @@
+name: Benchmark
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+  workflow_dispatch:
+    inputs:
+      table_sizes:
+        description: 'Comma-separated table sizes (e.g. 100000,500000,1000000)'
+        required: false
+        default: '100000,500000,1000000'
+
+jobs:
+  bench:
+    name: Benchmark (Linux, clang -O3)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y clang-18 ninja-build
+
+      - name: Configure
+        env:
+          CC: clang-18
+          CXX: clang++-18
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DOOH_BUILD_TESTS=OFF \
+            -DOOH_BUILD_BENCH=ON \
+            -DOOH_BUILD_GBENCH=ON
+
+      - name: Build
+        run: cmake --build build --parallel
+
+      # ── Run Google Benchmark suite ──────────────────────────────────────────
+      - name: Run benchmarks (JSON output)
+        run: |
+          ./build/bench_ooh_gbench \
+            --benchmark_format=json \
+            --benchmark_out=bench_result.json \
+            --benchmark_repetitions=3 \
+            --benchmark_report_aggregates_only=true \
+            2>&1 | tee bench_stdout.txt
+
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-${{ github.sha }}
+          path: |
+            bench_result.json
+            bench_stdout.txt
+          retention-days: 90
+
+      # ── Compare against baseline on PRs ────────────────────────────────────
+      - name: Download baseline (main branch)
+        if: github.event_name == 'pull_request'
+        uses: dawidd6/action-download-artifact@v6
+        with:
+          branch: ${{ github.base_ref }}
+          name: bench-${{ github.event.pull_request.base.sha }}
+          path: baseline/
+        continue-on-error: true
+
+      - name: Compare benchmark results
+        if: github.event_name == 'pull_request'
+        run: |
+          if [ -f baseline/bench_result.json ]; then
+            python3 scripts/bench_compare.py \
+              baseline/bench_result.json \
+              bench_result.json \
+              --threshold 0.10 \
+              | tee bench_compare.txt
+          else
+            echo "No baseline found — skipping regression check"
+          fi
+
+      - name: Post benchmark summary to PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            let body = '## Benchmark Results\n\n';
+            if (fs.existsSync('bench_compare.txt')) {
+              body += '```\n' + fs.readFileSync('bench_compare.txt', 'utf8') + '\n```\n';
+            } else {
+              body += '```\n' + fs.readFileSync('bench_stdout.txt', 'utf8').slice(0, 4000) + '\n```\n';
+            }
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+  # ── Micro benchmark: ooh-only, no external deps ────────────────────────────
+  bench_standalone:
+    name: Standalone bench (no ankerl)
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y clang-18 ninja-build
+
+      - name: Configure & Build
+        env:
+          CC: clang-18
+          CXX: clang++-18
+        run: |
+          cmake -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DOOH_BUILD_TESTS=OFF \
+            -DOOH_BUILD_BENCH=ON
+          cmake --build build --parallel
+
+      - name: Run
+        run: ./build/bench_ooh | tee bench_standalone.txt
+
+      - name: Upload
+        uses: actions/upload-artifact@v4
+        with:
+          name: bench-standalone-${{ github.sha }}
+          path: bench_standalone.txt
+          retention-days: 30

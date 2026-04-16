@@ -1,0 +1,55 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Create Release
+    runs-on: ubuntu-24.04
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Validate tag matches CMakeLists version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          CMAKE_VER=$(grep -Po 'project\(ooh VERSION \K[0-9.]+' CMakeLists.txt)
+          echo "Tag version:    $TAG"
+          echo "CMake version:  $CMAKE_VER"
+          if [ "$TAG" != "$CMAKE_VER" ]; then
+            echo "ERROR: tag $TAG != CMakeLists.txt version $CMAKE_VER"
+            exit 1
+          fi
+
+      - name: Extract CHANGELOG section
+        id: changelog
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          # Extract section between ## [VERSION] and the next ## [
+          awk "/^## \[$VERSION\]/{found=1; next} found && /^## \[/{exit} found{print}" \
+            CHANGELOG.md > release_notes.md || echo "No CHANGELOG entry found." > release_notes.md
+          cat release_notes.md
+
+      - name: Package header
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          mkdir -p dist
+          cp include/ooh/flat_map.hpp dist/flat_map.hpp
+          tar -czf dist/ooh-${VERSION}-headers.tar.gz include/ cmake/ CMakeLists.txt LICENSE README.md
+          zip  -r  dist/ooh-${VERSION}-headers.zip    include/ cmake/ CMakeLists.txt LICENSE README.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: release_notes.md
+          files: dist/*
+          draft: false
+          prerelease: ${{ contains(github.ref_name, '-rc') || contains(github.ref_name, '-beta') }}
