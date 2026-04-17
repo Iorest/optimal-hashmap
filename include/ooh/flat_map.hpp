@@ -53,15 +53,17 @@
 
 #ifdef _MSC_VER
 #  include <intrin.h>
-#  define OOH_FORCEINLINE  __forceinline
-#  define OOH_PREFETCH(p)  _mm_prefetch((const char*)(p), _MM_HINT_T0)
-#  define OOH_LIKELY(x)    (x)
-#  define OOH_UNLIKELY(x)  (x)
+#  define OOH_FORCEINLINE   __forceinline
+#  define OOH_PREFETCH(p)   _mm_prefetch((const char*)(p), _MM_HINT_T0)
+#  define OOH_LIKELY(x)     (x)
+#  define OOH_UNLIKELY(x)   (x)
+#  define OOH_RESTRICT      __restrict   // MSVC uses __restrict (no underscores)
 #else
-#  define OOH_FORCEINLINE  __attribute__((always_inline)) inline
-#  define OOH_PREFETCH(p)  __builtin_prefetch((p), 0, 3)
-#  define OOH_LIKELY(x)    __builtin_expect(!!(x), 1)
-#  define OOH_UNLIKELY(x)  __builtin_expect(!!(x), 0)
+#  define OOH_FORCEINLINE   __attribute__((always_inline)) inline
+#  define OOH_PREFETCH(p)   __builtin_prefetch((p), 0, 3)
+#  define OOH_LIKELY(x)     __builtin_expect(!!(x), 1)
+#  define OOH_UNLIKELY(x)   __builtin_expect(!!(x), 0)
+#  define OOH_RESTRICT      __restrict__
 #endif
 
 #include <atomic>
@@ -556,7 +558,7 @@ private:
     const Bucket* _find(const Key& key, sz h, u16 fp) const noexcept {
         if (OOH_UNLIKELY(m_cap == 0)) return nullptr;
         sz pos = h & m_mask;
-        const Bucket* __restrict__ B = m_buckets.get();
+        const Bucket* OOH_RESTRICT B = m_buckets.get();
         while (true) {
             OOH_PREFETCH(&B[(pos + PREFETCH_DIST) & m_mask]);
             const u64 w = B[pos].word.load(std::memory_order_acquire);
@@ -576,7 +578,7 @@ private:
     const Bucket* _find_relaxed(const Key& key, sz h, u16 fp) const noexcept {
         if (OOH_UNLIKELY(m_cap == 0)) return nullptr;
         sz pos = h & m_mask;
-        const Bucket* __restrict__ B = m_buckets.get();
+        const Bucket* OOH_RESTRICT B = m_buckets.get();
         while (true) {
             OOH_PREFETCH(&B[(pos + PREFETCH_DIST) & m_mask]);
             const u64 w = B[pos].word.load(std::memory_order_relaxed);
@@ -597,7 +599,7 @@ private:
     const Bucket* _find_sw(const Key& key, sz h, u16 fp) const noexcept {
         if (OOH_UNLIKELY(m_cap == 0)) return nullptr;
         sz pos = h & m_mask;
-        const Bucket* __restrict__ B = m_buckets.get();
+        const Bucket* OOH_RESTRICT B = m_buckets.get();
         while (true) {
             const u64 w = B[pos].word.load(std::memory_order_relaxed);
             const u32 df = Bucket::df_of(w);
@@ -622,7 +624,7 @@ private:
         sz pos = h & m_mask;
         u32 dist = 1, tomb_dist = 0, tomb_vidx = u32(-1);
         sz  tomb_pos = sz(-1);
-        const Bucket* __restrict__ B = m_buckets.get();
+        const Bucket* OOH_RESTRICT B = m_buckets.get();
         while (dist <= 0xFFFFu) {
             const u64 w = B[pos].word.load(std::memory_order_relaxed);
             const u32 df = Bucket::df_of(w);
