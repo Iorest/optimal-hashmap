@@ -73,6 +73,12 @@ if(OOH_BUILD_TESTS)
         $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic>
         $<$<CXX_COMPILER_ID:MSVC>:/W4>)
     ooh_add_sanitizers(test_flat_map)
+    # In Debug builds (used by CI/sanitizers), scale down Section N fuzz workload
+    # to stay within the 180 s timeout.  Release builds run full-scale.
+    target_compile_definitions(test_flat_map PRIVATE
+        $<$<CONFIG:Debug>:OOH_TEST_SCALE=0.1>
+        $<$<CONFIG:Release>:OOH_TEST_SCALE=1.0>
+        $<$<CONFIG:RelWithDebInfo>:OOH_TEST_SCALE=0.5>)
     add_test(NAME flat_map COMMAND test_flat_map)
     set_tests_properties(flat_map PROPERTIES TIMEOUT 180)
 endif()

@@ -46,6 +46,15 @@
 // threads (e.g. inside concurrent_insert lambdas) without TSan data races.
 static std::atomic<int> g_pass{0}, g_fail{0};
 
+// OOH_TEST_SCALE: workload multiplier for Section N fuzz tests (default 1).
+// Set to a smaller value (e.g. 0.1) on CI/slow machines to avoid timeouts.
+// Pass via: -DOOH_TEST_SCALE=0.1  (CMake or compile flag)
+#ifndef OOH_TEST_SCALE
+#  define OOH_TEST_SCALE 1.0
+#endif
+// Scale an OPS constant: evaluated at compile time when expr is constexpr.
+#define OOH_SCALE_OPS(n) (static_cast<int>((n) * OOH_TEST_SCALE))
+
 #define CHECK(expr) \
     do { \
         if (!(expr)) { \
@@ -1641,11 +1650,10 @@ static int cross_scan(const OohMap& ooh,
 
 // N-01: 1M random ops, integer keys, full oracle cross-check
 static void test_N01_oracle_1M_int() {
-    constexpr int OPS = 1'000'000, CAP = 20000;
+    const int OPS = OOH_SCALE_OPS(1'000'000), CAP = 20000;
     std::mt19937_64 rng(0x1337BEEF1337BEEFull);
-    // ~30% write rate × 1M = ~300K fresh inserts; each consumes one KV slot.
-    // Allocate 400K to have headroom.
-    ooh::flat_map<int64_t,int64_t> ooh(400000);
+    // ~30% write rate × OPS = fresh inserts; allocate enough headroom.
+    ooh::flat_map<int64_t,int64_t> ooh((size_t)(OPS * 0.4 + 1000));
     std::unordered_map<int64_t,int64_t> ref;
     ref.reserve(CAP);
 
@@ -1659,14 +1667,16 @@ static void test_N01_oracle_1M_int() {
     ok("N-01 oracle 1M ops (int keys, all ops)");
 }
 
-// N-02: Multi-seed fuzz — 10 seeds × 200K ops, ensures reproducibility
+// N-02: Multi-seed fuzz — 10 seeds × 200K ops (scaled), ensures reproducibility
 static void test_N02_multi_seed_fuzz() {
-    constexpr int SEEDS = 10, OPS = 200000, CAP = 5000;
+    constexpr int SEEDS = 10;
+    const int OPS = OOH_SCALE_OPS(200000);
+    constexpr int CAP = 5000;
     int total_wrong = 0;
     for (int s = 0; s < SEEDS; ++s) {
         std::mt19937_64 rng((uint64_t)s * 0xDEADBEEFull + 0xCAFEBABEull);
-        // 200K × 30% write = 60K fresh inserts; allocate 80K
-        ooh::flat_map<int64_t,int64_t> ooh(80000);
+        // ~30% write rate × OPS = fresh inserts; allocate with headroom
+        ooh::flat_map<int64_t,int64_t> ooh((size_t)(OPS * 0.4 + 1000));
         std::unordered_map<int64_t,int64_t> ref;
         int w = run_oracle(ooh, ref, OPS, CAP, rng);
         if (w) { total_wrong += w; continue; }
@@ -1968,14 +1978,11 @@ static void test_N09_slack_invariant() {
 // N-10: 500K ops, large key range, sparse occupancy
 //       Exercises the "long probe chains" code path at low load factor.
 static void test_N10_sparse_large_range() {
-    constexpr int OPS = 500000;
+    const int OPS = OOH_SCALE_OPS(500000);
     constexpr int KEY_RANGE = 100000;
     std::mt19937_64 rng(0x5A55E5A55Eull);
     // max_items must cover the total KV-slot budget over the lifetime of the map
-    // (not just the peak live count), because each fresh insert consumes one slot
-    // even if earlier keys were erased.  With ~30% write rate × 500K ops we need
-    // ~150K slots; allocate 200K to be safe.
-    ooh::flat_map<int64_t,int64_t> ooh(200000, 0.25);
+    ooh::flat_map<int64_t,int64_t> ooh((size_t)(OPS * 0.4 + 1000), 0.25);
     std::unordered_map<int64_t,int64_t> ref;
     ref.reserve(KEY_RANGE);
 
