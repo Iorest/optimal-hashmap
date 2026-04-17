@@ -731,7 +731,7 @@ static void test_E04_frozen_throughput_scaling() {
     double ratio = t1 / t4;
     printf("      find_frozen: 1-thread=%.1f ns/op  4-thread=%.1f ns/op  ratio=%.2fx\n",
            t1, t4, ratio);
-    CHECK_PERF(ratio >= 1.5, 4);  // at least 1.5× speedup — confirms wait-free scaling
+    CHECK_PERF(ratio >= 1.5, 8);  // at least 1.5× speedup — confirms wait-free scaling
     ok("E-04 frozen throughput scaling (wait-free)");
 }
 
@@ -1481,7 +1481,7 @@ static void test_M02_frozen_linear_scaling() {
     double ratio4 = t1 / t4;   // should be ~4 (ideal); require ≥ 2.0
     printf("      M-02 find_frozen: 1T=%.1fns  4T=%.1fns  ratio=%.2fx (need≥2.0)\n",
            t1, t4, ratio4);
-    CHECK_PERF(ratio4 >= 2.0, 4);
+    CHECK_PERF(ratio4 >= 2.0, 8);
     ok("M-02 find_frozen scales linearly (wait-free)");
 }
 
