@@ -701,7 +701,8 @@ static void test_E03_frozen_multithread_consistency() {
 // E-04: find_frozen scaling — throughput should grow linearly with threads
 //       (wait-free: no contention, perfect scaling expected)
 static void test_E04_frozen_throughput_scaling() {
-    constexpr int N = 50000, Q = 200000;
+    constexpr int N = 50000;
+    const int Q = OOH_SCALE_OPS(200000);
     auto keys = rand_keys(N);
     // Build queries: 80% hit
     std::vector<uint64_t> queries;
@@ -1451,7 +1452,8 @@ static void test_M01_amortised_insert_psl() {
 //       We use 0.6 (not ideal 1.0) to tolerate OS scheduler and cache effects.
 static void test_M02_frozen_linear_scaling() {
     using Clock = std::chrono::steady_clock;
-    constexpr int N = 50000, Q = 100000;
+    constexpr int N = 50000;
+    const int Q = OOH_SCALE_OPS(100000);
     std::mt19937_64 rng(42);
     std::vector<uint64_t> keys(N);
     for (auto& k : keys) k = rng();

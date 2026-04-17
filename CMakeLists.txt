@@ -48,7 +48,9 @@ function(ooh_add_sanitizers target)
         target_link_options(   ${target} PRIVATE -fsanitize=thread)
     endif()
     if(OOH_ENABLE_COVERAGE)
-        target_compile_options(${target} PRIVATE --coverage -O0 -g)
+        # -fprofile-update=atomic: prevents negative counter corruption when
+        # multiple threads update the same gcov counter simultaneously.
+        target_compile_options(${target} PRIVATE --coverage -fprofile-update=atomic -O0 -g)
         target_link_options(   ${target} PRIVATE --coverage)
     endif()
 endfunction()
@@ -76,14 +78,21 @@ if(OOH_BUILD_TESTS)
         $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic>
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /utf-8>)
     ooh_add_sanitizers(test_flat_map)
-    # In Debug builds (used by CI/sanitizers), scale down Section N fuzz workload
-    # to stay within the 180 s timeout.  Release builds run full-scale.
+    # Scale down fuzz workload in slow builds (Debug / Coverage) to avoid timeouts.
+    # Coverage adds ~10x overhead on top of Debug; use OOH_ENABLE_COVERAGE to
+    # further reduce OPS.  Release runs full-scale.
     target_compile_definitions(test_flat_map PRIVATE
-        $<$<CONFIG:Debug>:OOH_TEST_SCALE=0.1>
+        $<$<BOOL:${OOH_ENABLE_COVERAGE}>:OOH_TEST_SCALE=0.05>
+        $<$<AND:$<CONFIG:Debug>,$<NOT:$<BOOL:${OOH_ENABLE_COVERAGE}>>>:OOH_TEST_SCALE=0.1>
         $<$<CONFIG:Release>:OOH_TEST_SCALE=1.0>
         $<$<CONFIG:RelWithDebInfo>:OOH_TEST_SCALE=0.5>)
     add_test(NAME flat_map COMMAND test_flat_map)
-    set_tests_properties(flat_map PROPERTIES TIMEOUT 180)
+    # Coverage builds are ~10x slower than plain Debug; allow extra time.
+    if(OOH_ENABLE_COVERAGE)
+        set_tests_properties(flat_map PROPERTIES TIMEOUT 600)
+    else()
+        set_tests_properties(flat_map PROPERTIES TIMEOUT 180)
+    endif()
 endif()
 
 # ── Standalone benchmark (no Google Benchmark dependency) ─────────────────────
