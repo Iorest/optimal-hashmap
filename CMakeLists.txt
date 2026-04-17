@@ -29,6 +29,9 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang|GNU")
         $<$<CONFIG:Release>:-O3 -march=native>
         $<$<CONFIG:RelWithDebInfo>:-O2 -march=native>
     )
+elseif(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    # /utf-8: treat source as UTF-8 to avoid C4819 warnings for Unicode in comments
+    target_compile_options(ooh INTERFACE /utf-8)
 endif()
 
 # ── Sanitizer helper ──────────────────────────────────────────────────────────
@@ -71,7 +74,7 @@ if(OOH_BUILD_TESTS)
     target_link_libraries(test_flat_map PRIVATE ooh::ooh $<$<BOOL:${UNIX}>:pthread>)
     target_compile_options(test_flat_map PRIVATE
         $<$<CXX_COMPILER_ID:GNU,Clang,AppleClang>:-Wall -Wextra -Wpedantic>
-        $<$<CXX_COMPILER_ID:MSVC>:/W4>)
+        $<$<CXX_COMPILER_ID:MSVC>:/W4 /utf-8>)
     ooh_add_sanitizers(test_flat_map)
     # In Debug builds (used by CI/sanitizers), scale down Section N fuzz workload
     # to stay within the 180 s timeout.  Release builds run full-scale.
